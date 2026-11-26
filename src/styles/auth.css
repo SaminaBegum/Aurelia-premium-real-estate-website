@@ -1,0 +1,289 @@
+/* ==========================================================================
+   AURELIA - AUTHENTICATION & MEMBERSHIP STYLING
+   ========================================================================== */
+
+/* Top bar authentication links */
+.top-auth {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: auto;
+  padding-left: 18px;
+  border-left: 1px solid rgba(180, 146, 74, 0.25);
+  height: 18px;
+}
+.top-auth a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #e6d6ae;
+  transition: color 0.2s, opacity 0.2s;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+.top-auth a:hover {
+  color: var(--gold);
+}
+.top-auth span.sep {
+  opacity: 0.45;
+  color: #e6d6ae;
+  margin: 0 !important;
+  font-size: 11px;
+}
+
+/* Mobile nav auth buttons */
+.auth-m {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--ln);
+  margin-top: 10px;
+}
+.auth-m .btn, .auth-m .btn-o {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  padding: 10px 14px;
+}
+
+/* Auth Pages Container */
+.auth-page {
+  padding: 50px 0 90px;
+  background: var(--ivo);
+  min-height: calc(100vh - 350px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-card-wrap {
+  width: min(520px, 100% - 32px);
+  margin: 0 auto;
+}
+.auth-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px 36px;
+  box-shadow: 0 16px 40px rgba(12, 12, 13, 0.08);
+  border: 1px solid rgba(180, 146, 74, 0.25);
+  border-top: 4px solid var(--gold);
+}
+.auth-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.auth-header small {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+.auth-header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  color: var(--bur);
+  margin-bottom: 8px;
+}
+.auth-header p {
+  font-size: 13.5px;
+  color: var(--mut);
+  line-height: 1.5;
+}
+
+/* Form fields */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.auth-field label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #333;
+}
+.auth-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.auth-input-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--mut);
+  pointer-events: none;
+}
+.auth-input {
+  width: 100%;
+  border: 1px solid var(--ln);
+  border-radius: 8px;
+  padding: 12px 14px 12px 42px;
+  font: 500 14px Montserrat, system-ui, sans-serif;
+  color: var(--blk);
+  background: #fff;
+  transition: all 0.2s;
+}
+.auth-input.no-icon {
+  padding-left: 14px;
+}
+.auth-input:focus {
+  outline: 2px solid var(--gold);
+  border-color: var(--gold);
+}
+.auth-input.error {
+  border-color: #d32f2f;
+  background-color: #fff9f9;
+}
+.auth-pw-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--mut);
+  cursor: pointer;
+  padding: 4px;
+  display: grid;
+  place-items: center;
+}
+.auth-pw-toggle:hover {
+  color: var(--bur);
+}
+
+.auth-phone-group {
+  display: flex;
+  gap: 8px;
+}
+.auth-phone-cc {
+  width: 110px;
+  border: 1px solid var(--ln);
+  border-radius: 8px;
+  padding: 12px 8px;
+  font: 500 13px Montserrat;
+  background: #fcfbf9;
+  cursor: pointer;
+}
+
+.auth-error-msg {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #d32f2f;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+/* Helpers & Links */
+.auth-row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.auth-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #444;
+  font-size: 13px;
+}
+.auth-checkbox input {
+  accent-color: var(--bur);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.auth-link {
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.auth-link:hover {
+  color: var(--bur);
+  text-decoration: underline;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 13px 20px;
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--ln);
+  font-size: 13.5px;
+  color: var(--mut);
+}
+.auth-footer a {
+  color: var(--gold);
+  font-weight: 600;
+  margin-left: 6px;
+  text-decoration: none;
+}
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Modal for Forgot Password */
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 12, 13, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+.auth-modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 32px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  border-top: 3px solid var(--gold);
+  position: relative;
+}
+.auth-modal h3 {
+  font-size: 20px;
+  color: var(--bur);
+  margin-bottom: 8px;
+}
+.auth-modal p {
+  font-size: 13.5px;
+  color: var(--mut);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+.auth-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--mut);
+}
+
+@media (max-width: 640px) {
+  .auth-card {
+    padding: 30px 20px;
+  }
+}
