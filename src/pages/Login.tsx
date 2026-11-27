@@ -10,7 +10,11 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [remember, setRemember] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
+  const [errors, setErrors] = useState<{
+    email?: string;
+    password?: string;
+    general?: string;
+  }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -78,7 +82,16 @@ export default function Login() {
           <div className="auth-card">
             <div className="auth-header">
               <Link to="/" style={{ display: 'inline-block', marginBottom: '14px' }}>
-                <img src={A('logo-new.png')} alt="Aurelia Real Estate Company" style={{ height: '44px', width: 'auto', maxWidth: '200px', objectFit: 'contain' }} />
+                <img
+                  src={A('logo-new.png')}
+                  alt="Aurelia Real Estate Company"
+                  style={{
+                    height: '44px',
+                    width: 'auto',
+                    maxWidth: '200px',
+                    objectFit: 'contain',
+                  }}
+                />
               </Link>
               <small>Client Portal</small>
               <h1>Welcome Back</h1>
@@ -87,12 +100,23 @@ export default function Login() {
 
             {submitted ? (
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <CheckCircle2 size={48} style={{ color: 'var(--gold)', margin: '0 auto 16px' }} />
+                <CheckCircle2
+                  size={48}
+                  style={{ color: 'var(--gold)', margin: '0 auto 16px' }}
+                />
                 <h3 style={{ fontSize: '20px', color: 'var(--bur)', marginBottom: '8px' }}>
                   Verification in Progress
                 </h3>
-                <p style={{ fontSize: '14px', color: 'var(--mut)', lineHeight: 1.6, marginBottom: '24px' }}>
-                  Signed in as <b>{email}</b>. Live session authorization is active for this device.
+                <p
+                  style={{
+                    fontSize: '14px',
+                    color: 'var(--mut)',
+                    lineHeight: 1.6,
+                    marginBottom: '24px',
+                  }}
+                >
+                  Signed in as <b>{email}</b>. Live session authorization is active for
+                  this device.
                 </p>
                 <Link to="/exclusive-projects" className="btn gold" style={{ width: '100%' }}>
                   Explore Portfolio
@@ -111,7 +135,7 @@ export default function Login() {
                       className={`auth-input ${errors.email ? 'error' : ''}`}
                       placeholder="name@example.com"
                       value={email}
-                      onChange={e => {
+                      onChange={(e) => {
                         setEmail(e.target.value);
                         if (errors.email) setErrors({ ...errors, email: undefined });
                       }}
@@ -136,7 +160,7 @@ export default function Login() {
                       className={`auth-input ${errors.password ? 'error' : ''}`}
                       placeholder="Enter your password"
                       value={password}
-                      onChange={e => {
+                      onChange={(e) => {
                         setPassword(e.target.value);
                         if (errors.password) setErrors({ ...errors, password: undefined });
                       }}
@@ -164,7 +188,7 @@ export default function Login() {
                     <input
                       type="checkbox"
                       checked={remember}
-                      onChange={e => setRemember(e.target.checked)}
+                      onChange={(e) => setRemember(e.target.checked)}
                     />
                     <span>Remember me</span>
                   </label>
@@ -172,7 +196,12 @@ export default function Login() {
                   <button
                     type="button"
                     className="auth-link"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
                     onClick={() => {
                       setForgotOpen(true);
                       setForgotSent(false);
@@ -206,7 +235,7 @@ export default function Login() {
       {/* Forgot Password Modal */}
       {forgotOpen && (
         <div className="auth-modal-overlay" onClick={() => setForgotOpen(false)}>
-          <div className="auth-modal" onClick={e => e.stopPropagation()}>
+          <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
             <button
               className="auth-modal-close"
               onClick={() => setForgotOpen(false)}
@@ -217,10 +246,14 @@ export default function Login() {
 
             {forgotSent ? (
               <div style={{ textAlign: 'center', padding: '10px 0' }}>
-                <CheckCircle2 size={40} style={{ color: 'var(--gold)', margin: '0 auto 12px' }} />
+                <CheckCircle2
+                  size={40}
+                  style={{ color: 'var(--gold)', margin: '0 auto 12px' }}
+                />
                 <h3>Password Reset Sent</h3>
                 <p>
-                  Instructions to reset your password have been dispatched to <b>{forgotEmail}</b>. Please check your inbox and spam folders.
+                  Instructions to reset your password have been dispatched to{' '}
+                  <b>{forgotEmail}</b>. Please check your inbox and spam folders.
                 </p>
                 <button
                   type="button"
@@ -235,7 +268,8 @@ export default function Login() {
               <div>
                 <h3>Reset Your Password</h3>
                 <p>
-                  Enter the email address registered with your Aurelia account, and our system will send you a secure link to reset your credentials.
+                  Enter the email address registered with your Aurelia account, and our
+                  system will send you a secure link to reset your credentials.
                 </p>
                 <form onSubmit={handleForgotSubmit}>
                   <div className="auth-field" style={{ marginBottom: '16px' }}>
@@ -248,7 +282,7 @@ export default function Login() {
                         className={`auth-input ${forgotError ? 'error' : ''}`}
                         placeholder="name@example.com"
                         value={forgotEmail}
-                        onChange={e => {
+                        onChange={(e) => {
                           setForgotEmail(e.target.value);
                           if (forgotError) setForgotError('');
                         }}
