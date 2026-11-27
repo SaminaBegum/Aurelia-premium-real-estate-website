@@ -11,9 +11,10 @@ import {
   User,
 } from 'lucide-react';
 import { A } from '@/lib/assets';
-import { NAV } from '@/data/navigation';
+import { getNav } from '@/data/navigation';
 import { SITE } from '@/data/site';
 import { useSaved } from '@/contexts/SavedContext';
+import { useLocationContext } from '@/contexts/LocationContext';
 import { useScrolled } from '@/hooks/useScrolled';
 import { useIsMobile } from '@/hooks/use-mobile';
 import CountrySelector from '@/components/layout/CountrySelector';
@@ -21,6 +22,7 @@ import '@/styles/auth.css';
 
 export default function Header() {
   const { saved } = useSaved();
+  const { market, locationInfo } = useLocationContext();
   const { pathname, search } = useLocation();
   const sc = useScrolled();
   const isMobile = useIsMobile();
@@ -28,6 +30,7 @@ export default function Header() {
   const [ac, setAc] = useState<number | null>(null);
   const [hid, setHid] = useState(false);
   const home = pathname === '/';
+  const navItems = getNav(market);
 
   // Close every menu after a link is clicked (CSS :hover/:focus-within would otherwise keep the dropdown open).
   const closeMenus = () => {
@@ -57,13 +60,11 @@ export default function Header() {
     >
       <div className="top">
         <span>
-          <MapPin size={13} /> Pune, India · Dubai, UAE
+          <MapPin size={13} /> {locationInfo.topBarLocation}
         </span>
-        {SITE.phones.map((p, i) => (
-          <a key={p.href} className={i ? 'hide-m' : ''} href={p.href}>
-            <Phone size={13} /> {p.display}
-          </a>
-        ))}
+        <a href={locationInfo.phone.href}>
+          <Phone size={13} /> {locationInfo.phone.display}
+        </a>
         <div className="top-auth hide-m">
           <Link to="/login">
             <User size={13} /> Log In
@@ -83,7 +84,7 @@ export default function Header() {
           aria-label="Main"
           onMouseLeave={() => setHid(false)}
         >
-          {NAV.map(([t, to, sub], i) => (
+          {navItems.map(([t, to, sub], i) => (
             <div className={'ni' + (ac === i ? ' ex' : '')} key={t}>
               <Link
                 to={to}

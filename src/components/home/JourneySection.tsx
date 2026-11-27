@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { Search, CalendarCheck, ShieldCheck, KeyRound } from 'lucide-react';
-import { journey } from '@/data/journey';
+import { getJourney } from '@/data/journey';
 import { Reveal } from '@/components/ui/Reveal';
 import { SectionHead } from '@/components/ui/SectionHead';
+import { useLocationContext } from '@/contexts/LocationContext';
 
 const ICONS = [Search, CalendarCheck, ShieldCheck, KeyRound];
 
@@ -38,19 +39,22 @@ const STYLES = `
   animation:jr2-shim 5s linear infinite}
 @keyframes jr2-shim{to{background-position:-300% 0}}
 
-.jr2-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:30px}
+/* grid: every column stretches to the tallest one, so all 4 cards end up the same height */
+.jr2-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:30px;align-items:stretch}
+.jr2-grid > *{display:flex;flex-direction:column;min-width:0}
 
-.jr2-col{position:relative}
+.jr2-col{position:relative;display:flex;flex-direction:column;flex:1}
 
 /* timeline node */
-.jr2-node{position:relative;width:56px;height:56px;margin-bottom:22px;
+.jr2-node{position:relative;width:56px;height:56px;margin-bottom:22px;flex:none;
   transform:scale(0);transition:transform .7s cubic-bezier(.3,1.6,.5,1) calc(var(--i) * .25s + .15s)}
 .jr2.on .jr2-node{transform:scale(1)}
+/* all circles use the same gold as the 4th one */
 .jr2-dot{position:relative;width:100%;height:100%;border-radius:50%;display:grid;place-items:center;
-  background:linear-gradient(135deg,var(--c1),var(--c2));color:#0f1012;
+  background:linear-gradient(135deg,#F5DE9B,#B08D3C);color:#0f1012;
   font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:22px;
-  box-shadow:0 8px 26px rgba(var(--rgb),.45)}
-.jr2-dot::after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid rgba(var(--rgb),.7);
+  box-shadow:0 8px 26px rgba(176,141,60,.45)}
+.jr2-dot::after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid rgba(176,141,60,.7);
   animation:jr2-ring 2.6s ease-out infinite;animation-delay:calc(var(--i) * .5s)}
 @keyframes jr2-ring{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.9);opacity:0}}
 
@@ -62,8 +66,8 @@ const STYLES = `
   transition:transform 1s cubic-bezier(.4,0,.2,1) calc(var(--i) * .5s + .6s)}
 .jr2.on .jr2-line i{transform:scaleX(1)}
 
-/* card */
-.jr2-card{position:relative;overflow:hidden;height:100%;padding:34px 30px 32px;border-radius:20px;
+/* card (flex:1 = fills the rest of the column, so all cards share one height) */
+.jr2-card{position:relative;overflow:hidden;flex:1;padding:34px 30px 32px;border-radius:20px;
   background:linear-gradient(160deg,#2b2d34,#202227);
   border:1px solid rgba(255,255,255,.07);
   transition:transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s ease,border-color .45s ease}
@@ -101,6 +105,8 @@ const STYLES = `
 `;
 
 export default function JourneySection() {
+  const { market, isPune } = useLocationContext();
+  const currentJourney = getJourney(market);
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -128,11 +134,14 @@ export default function JourneySection() {
       <style>{STYLES}</style>
       <div className="w">
         <Reveal>
-          <SectionHead eyebrow="How it works" title="Your journey with Aurelia" />
+          <SectionHead
+            eyebrow="How it works"
+            title={isPune ? 'Your property journey in Pune' : 'Your property journey in Dubai'}
+          />
           <span className="jr2-bar" />
         </Reveal>
         <div className="jr2-grid">
-          {journey.map(([t, d], k) => {
+          {currentJourney.map(([t, d], k) => {
             const tone = TONES[k % TONES.length];
             const next = TONES[(k + 1) % TONES.length];
             const Icon = ICONS[k % ICONS.length];
@@ -144,12 +153,12 @@ export default function JourneySection() {
               '--i': k,
             } as React.CSSProperties;
             return (
-              <Reveal key={t} d={k * 80}>
+              <Reveal key={`${market}-${t}`} d={k * 80}>
                 <div className="jr2-col" style={vars}>
                   <div className="jr2-node">
                     <div className="jr2-dot">{k + 1}</div>
                   </div>
-                  {k < journey.length - 1 && (
+                  {k < currentJourney.length - 1 && (
                     <div className="jr2-line"><i /></div>
                   )}
                   <div className="jr2-card" onMouseMove={onMove}>

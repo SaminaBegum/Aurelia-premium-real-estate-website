@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { listings } from '@/data/listings';
+import { getListings } from '@/api/api';
 import { ListingCard } from '@/components/ListingCard';
 import { Reveal } from '@/components/ui/Reveal';
 import { SectionHead } from '@/components/ui/SectionHead';
+import { useLocationContext } from '@/contexts/LocationContext';
 
 const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
   const el = e.currentTarget;
@@ -105,25 +106,32 @@ const STYLES = `
 `;
 
 export default function FeaturedListings() {
+  const { market, isPune } = useLocationContext();
+  const marketListings = getListings(market).slice(0, 8);
+
   return (
     <section className="w sec fl-sec">
       <style>{STYLES}</style>
       <Reveal>
         <SectionHead
           eyebrow="Featured listings"
-          title="Recently added properties"
-          sub="A snapshot of premier luxury residential and commercial properties for sale."
+          title={isPune ? 'Featured Pune properties' : 'Featured Dubai properties'}
+          sub={
+            isPune
+              ? 'A snapshot of premier luxury residential and commercial properties for sale in Pune.'
+              : 'A snapshot of premier luxury residential and commercial properties for sale in Dubai.'
+          }
           right={
-            <Link className="btn-o fl-btn" to="/properties">
-              View all properties <ArrowRight size={16} />
+            <Link className="btn-o fl-btn" to={`/properties?market=${market}`}>
+              {isPune ? 'View all Pune properties' : 'View all Dubai properties'} <ArrowRight size={16} />
             </Link>
           }
         />
         <span className="fl-line" />
       </Reveal>
       <div className="grid">
-        {listings.slice(0, 8).map((l, k) => (
-          <Reveal key={l.id} d={(k % 4) * 80}>
+        {marketListings.map((l, k) => (
+          <Reveal key={`${market}-${l.id}`} d={(k % 4) * 80}>
             <div className="fl-item" onMouseMove={onMove} onMouseLeave={onLeave}>
               <ListingCard l={l} />
             </div>

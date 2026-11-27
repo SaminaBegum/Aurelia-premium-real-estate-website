@@ -1,21 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   MapPin, Phone, Check, ArrowRight, Waves, Dumbbell, Trees, Baby, Users,
   Car, ShieldCheck, Zap, Trophy, Film, Building2,
+  ChevronLeft, ChevronRight, X, Play, Images,
 } from 'lucide-react';
 import InnerPageBanner from '@/components/layout/InnerPageBanner';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { SectionHead } from '@/components/ui/SectionHead';
-import { Gallery } from '@/components/Gallery';
 import { FloorPlan } from '@/components/FloorPlan';
 import { EnquiryForm } from '@/components/EnquiryForm';
 import { getProject } from '@/api/api';
+import { projects } from '@/data/projects';
 import { PAYMENT_PLANS } from '@/data/paymentPlans';
 import { ENQUIRY_FIELDS } from '@/data/forms';
 import { SITE } from '@/data/site';
 import { A } from '@/lib/assets';
 import { startPrice, unit } from '@/lib/format';
+import { useLocationContext } from '@/contexts/LocationContext';
 
 const SECTIONS = [
   ['overview', 'Overview'],
@@ -103,6 +105,84 @@ const CSS = `
 .pdx .tabs button:hover{border-color:var(--g);color:var(--g)}
 .pdx .tabs button.on{background:var(--g);border-color:var(--g);color:#fff}
 
+/* ---------- Gallery (photos mosaic + videos + lightbox) ---------- */
+.pdx .gx-tabs{margin-top:1.2rem}
+.pdx .gx-tabs button{display:inline-flex;align-items:center;gap:.45rem}
+.pdx .gx-tabs em{font-style:normal;font-size:.78rem;opacity:.75}
+
+.pdx .gx-mosaic{position:relative;display:grid;gap:.7rem;height:clamp(300px,42vw,500px);border-radius:16px;overflow:hidden}
+.pdx .gx-tile{position:relative;padding:0;border:0;background:#e9e4d8;cursor:pointer;overflow:hidden;display:block;min-height:0}
+.pdx .gx-tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.pdx .gx-tile:hover img{transform:scale(1.06)}
+.pdx .gx-tile::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(0,0,0,.25));opacity:0;transition:opacity .3s}
+.pdx .gx-tile:hover::after{opacity:1}
+.pdx .gx-more{position:absolute;inset:0;z-index:1;display:grid;place-items:center;background:rgba(0,0,0,.55);color:#fff;
+  font-size:1.5rem;font-weight:600;letter-spacing:.02em;backdrop-filter:blur(2px)}
+.pdx .gx-all{position:absolute;right:1rem;bottom:1rem;z-index:2;display:inline-flex;align-items:center;gap:.5rem;
+  padding:.65rem 1.1rem;border-radius:99px;border:1px solid rgba(255,255,255,.6);background:rgba(0,0,0,.72);
+  color:#fff;font-weight:500;font-size:.9rem;cursor:pointer;backdrop-filter:blur(6px);transition:background .25s,border-color .25s}
+.pdx .gx-all:hover{background:var(--g);border-color:var(--g)}
+
+/* layouts by number of tiles shown */
+.pdx .gx-m1{grid-template-columns:1fr}
+.pdx .gx-m2{grid-template-columns:1fr 1fr}
+.pdx .gx-m3{grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr}
+.pdx .gx-m3 .gx-tile:first-child{grid-row:1/3}
+.pdx .gx-m4{grid-template-columns:2fr 1fr;grid-template-rows:repeat(3,1fr)}
+.pdx .gx-m4 .gx-tile:first-child{grid-row:1/4}
+.pdx .gx-m5{grid-template-columns:2fr 1fr 1fr;grid-template-rows:1fr 1fr}
+.pdx .gx-m5 .gx-tile:first-child{grid-row:1/3}
+
+@media(max-width:720px){
+  .pdx .gx-mosaic{height:auto}
+  .pdx .gx-m2,.pdx .gx-m3,.pdx .gx-m4,.pdx .gx-m5{grid-template-columns:1fr 1fr;grid-template-rows:none}
+  .pdx .gx-mosaic .gx-tile{aspect-ratio:4/3}
+  .pdx .gx-mosaic .gx-tile:first-child{grid-column:1/3;grid-row:auto;aspect-ratio:16/10}
+  .pdx .gx-m1 .gx-tile{aspect-ratio:16/10}
+  .pdx .gx-all{right:.6rem;bottom:.6rem;font-size:.8rem;padding:.5rem .85rem}
+}
+
+/* videos */
+.pdx .gx-vids{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.1rem}
+.pdx .gx-vid{position:relative;padding:0;border:0;border-radius:14px;overflow:hidden;background:#111;cursor:pointer;
+  aspect-ratio:16/9;box-shadow:0 18px 36px -24px rgba(0,0,0,.5);transition:transform .3s,box-shadow .3s}
+.pdx .gx-vid:hover{transform:translateY(-4px);box-shadow:0 26px 44px -22px rgba(0,0,0,.6)}
+.pdx .gx-vid img{width:100%;height:100%;object-fit:cover;display:block;opacity:.85;transition:opacity .3s,transform .5s}
+.pdx .gx-vid:hover img{opacity:1;transform:scale(1.05)}
+.pdx .gx-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:50%;
+  display:grid;place-items:center;background:var(--g);color:#000;box-shadow:0 0 0 8px rgba(176,141,60,.3);transition:transform .3s}
+.pdx .gx-vid:hover .gx-play{transform:translate(-50%,-50%) scale(1.12)}
+
+/* lightbox */
+.pdx .gx-lb{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.94);display:flex;flex-direction:column;
+  animation:gxFade .25s ease both}
+@keyframes gxFade{from{opacity:0}to{opacity:1}}
+.pdx .gx-lb-top{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.4rem;color:#fff;font-size:.95rem}
+.pdx .gx-lb-top span{color:var(--g2);letter-spacing:.06em}
+.pdx .gx-lb-x,.pdx .gx-lb-nav{display:grid;place-items:center;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);
+  color:#fff;border-radius:50%;cursor:pointer;transition:background .25s,border-color .25s}
+.pdx .gx-lb-x{width:42px;height:42px}
+.pdx .gx-lb-x:hover,.pdx .gx-lb-nav:hover{background:var(--g);border-color:var(--g);color:#000}
+.pdx .gx-lb-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 4.5rem}
+.pdx .gx-lb-stage img,.pdx .gx-lb-stage iframe,.pdx .gx-lb-stage video{max-width:100%;max-height:100%;border-radius:10px;border:0;
+  box-shadow:0 30px 80px -20px rgba(0,0,0,.8)}
+.pdx .gx-lb-stage iframe,.pdx .gx-lb-stage video{width:min(100%,1100px);aspect-ratio:16/9;background:#000}
+.pdx .gx-lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px}
+.pdx .gx-lb-nav.p{left:1rem}
+.pdx .gx-lb-nav.n{right:1rem}
+.pdx .gx-lb-strip{display:flex;gap:.55rem;overflow-x:auto;padding:1rem 1.2rem 1.2rem;justify-content:safe center;scrollbar-width:thin}
+.pdx .gx-lb-strip button{flex:none;width:84px;height:58px;padding:0;border-radius:8px;overflow:hidden;border:2px solid transparent;
+  background:#222;cursor:pointer;opacity:.55;transition:opacity .25s,border-color .25s}
+.pdx .gx-lb-strip button.on{opacity:1;border-color:var(--g)}
+.pdx .gx-lb-strip img{width:100%;height:100%;object-fit:cover;display:block}
+@media(max-width:720px){
+  .pdx .gx-lb-stage{padding:0 .5rem}
+  .pdx .gx-lb-nav{width:40px;height:40px}
+  .pdx .gx-lb-nav.p{left:.4rem}
+  .pdx .gx-lb-nav.n{right:.4rem}
+  .pdx .gx-lb-strip button{width:64px;height:46px}
+}
+
 /* ---------- Floor plans ---------- */
 .pdx .fps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.4rem}
 .pdx .fps figure{margin:0;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:1rem;
@@ -183,9 +263,221 @@ const amenityIcon = (name: string) => {
   return <Check size={sz} />;
 };
 
+/* ====================================================================
+   Gallery: photos and videos are kept apart, so the layout stays clean.
+   - Photos: 1 big + up to 4 small tiles (same-height grid), "+N" overlay
+   - Videos: separate tab, uniform 16:9 cards
+   - Click anything -> full-screen lightbox with arrows, keys, thumbnails
+   ==================================================================== */
+type Media = { kind: 'img' | 'yt' | 'file'; src: string; thumb?: string };
+
+const ytId = (v: string) => {
+  const m = v.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);
+  if (m) return m[1];
+  return /^[\w-]{11}$/.test(v) ? v : null;
+};
+
+const toVideo = (v: unknown): Media | null => {
+  const o = v as any;
+  const raw: string = typeof v === 'string' ? v : o?.url || o?.src || o?.id || '';
+  if (!raw) return null;
+  const id = ytId(raw);
+  if (id) {
+    return {
+      kind: 'yt',
+      src: `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`,
+      thumb: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+    };
+  }
+  return { kind: 'file', src: A(raw) };
+};
+
+function ProjectGallery({
+  imgs,
+  videos,
+  alt,
+}: {
+  imgs: string[];
+  videos?: unknown[];
+  alt: string;
+}) {
+  const photos: Media[] = (imgs || []).map((s) => ({ kind: 'img', src: A(s), thumb: A(s) }));
+  const vids: Media[] = (videos || []).map(toVideo).filter(Boolean) as Media[];
+
+  const [tab, setTab] = useState<'photos' | 'videos'>('photos');
+  const [lb, setLb] = useState<number | null>(null);
+
+  const list = tab === 'photos' ? photos : vids;
+
+  const close = useCallback(() => setLb(null), []);
+  const step = useCallback(
+    (d: number) =>
+      setLb((i) => (i === null || !list.length ? i : (i + d + list.length) % list.length)),
+    [list.length],
+  );
+
+  // keyboard + body scroll lock while lightbox is open
+  useEffect(() => {
+    if (lb === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+      if (e.key === 'ArrowRight') step(1);
+      if (e.key === 'ArrowLeft') step(-1);
+    };
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [lb, close, step]);
+
+  const shown = photos.slice(0, 5);
+  const extra = photos.length - shown.length;
+  const cur = lb !== null ? list[lb] : null;
+
+  return (
+    <>
+      {vids.length > 0 && photos.length > 0 && (
+        <div className="tabs gx-tabs">
+          <button className={tab === 'photos' ? 'on' : ''} onClick={() => { setTab('photos'); setLb(null); }}>
+            <Images size={16} /> Photos <em>{photos.length}</em>
+          </button>
+          <button className={tab === 'videos' ? 'on' : ''} onClick={() => { setTab('videos'); setLb(null); }}>
+            <Play size={16} /> Videos <em>{vids.length}</em>
+          </button>
+        </div>
+      )}
+
+      {tab === 'photos' || !vids.length ? (
+        photos.length > 0 && (
+          <div className={`gx-mosaic gx-m${shown.length}`} style={vids.length ? undefined : { marginTop: '1.4rem' }}>
+            {shown.map((m, i) => (
+              <button
+                key={m.src + i}
+                className="gx-tile"
+                onClick={() => setLb(i)}
+                aria-label={`Open photo ${i + 1}`}
+              >
+                <img src={m.src} alt={`${alt} ${i + 1}`} loading={i === 0 ? 'eager' : 'lazy'} />
+                {i === shown.length - 1 && extra > 0 && <span className="gx-more">+{extra}</span>}
+              </button>
+            ))}
+            <button className="gx-all" onClick={() => setLb(0)}>
+              <Images size={16} /> View all {photos.length} photos
+            </button>
+          </div>
+        )
+      ) : (
+        <div className="gx-vids">
+          {vids.map((m, i) => (
+            <button key={m.src + i} className="gx-vid" onClick={() => setLb(i)} aria-label={`Play video ${i + 1}`}>
+              {m.thumb && <img src={m.thumb} alt={`${alt} video ${i + 1}`} loading="lazy" />}
+              <span className="gx-play">
+                <Play size={22} fill="currentColor" />
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {cur && lb !== null && (
+        <div
+          className="gx-lb"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${alt} gallery`}
+          onClick={(e) => e.target === e.currentTarget && close()}
+        >
+          <div className="gx-lb-top" onClick={(e) => e.stopPropagation()}>
+            <span>
+              {alt} · {lb + 1} / {list.length}
+            </span>
+            <button className="gx-lb-x" onClick={close} aria-label="Close">
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="gx-lb-stage" onClick={(e) => e.target === e.currentTarget && close()}>
+            {list.length > 1 && (
+              <button className="gx-lb-nav p" onClick={() => step(-1)} aria-label="Previous">
+                <ChevronLeft size={24} />
+              </button>
+            )}
+
+            {cur.kind === 'img' && <img key={cur.src} src={cur.src} alt={`${alt} ${lb + 1}`} />}
+            {cur.kind === 'yt' && (
+              <iframe
+                key={cur.src}
+                src={cur.src}
+                title={`${alt} video`}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+            )}
+            {cur.kind === 'file' && <video key={cur.src} src={cur.src} controls autoPlay playsInline />}
+
+            {list.length > 1 && (
+              <button className="gx-lb-nav n" onClick={() => step(1)} aria-label="Next">
+                <ChevronRight size={24} />
+              </button>
+            )}
+          </div>
+
+          {list.length > 1 && (
+            <div className="gx-lb-strip" onClick={(e) => e.stopPropagation()}>
+              {list.map((m, i) => (
+                <button key={m.src + i} className={i === lb ? 'on' : ''} onClick={() => setLb(i)} aria-label={`Go to ${i + 1}`}>
+                  {m.thumb && <img src={m.thumb} alt="" loading="lazy" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function ProjectDetail() {
   const { id = '' } = useParams();
-  const p = getProject(id);
+  const { market } = useLocationContext();
+  const navigate = useNavigate();
+
+  // Find project strictly belonging to the currently active market
+  const exact = useMemo(() => projects.find((proj) => proj.id === id && proj.market === market), [id, market]);
+
+  // If not found in active market, check if this ID belongs to the previous market to find an equivalent
+  const prevP = useMemo(() => (!exact ? projects.find((proj) => proj.id === id) : undefined), [exact, id]);
+
+  const equivP = useMemo(() => {
+    if (!prevP) return undefined;
+    const targetProjects = projects.filter((proj) => proj.market === market);
+    if (!targetProjects.length) return undefined;
+    return (
+      targetProjects.find((proj) => proj.dev.toLowerCase() === prevP.dev.toLowerCase()) ||
+      targetProjects.find(
+        (proj) => proj.category === prevP.category && proj.type.toLowerCase() === prevP.type.toLowerCase()
+      ) ||
+      targetProjects.find((proj) => proj.category === prevP.category) ||
+      targetProjects[0]
+    );
+  }, [prevP, market]);
+
+  const p = exact || equivP;
+
+  // Sync route if viewing an equivalent project in the new market
+  useEffect(() => {
+    if (!exact && prevP) {
+      if (equivP) {
+        navigate(`/exclusive-projects/${equivP.id}`, { replace: true });
+      } else {
+        navigate('/exclusive-projects', { replace: true });
+      }
+    }
+  }, [exact, prevP, equivP, navigate]);
 
   const [fb, setFb] = useState(0);
   const [pl, setPl] = useState(0);
@@ -195,7 +487,7 @@ export default function ProjectDetail() {
   useEffect(() => {
     setFb(0);
     setPl(0);
-  }, [id]);
+  }, [id, p?.id]);
 
   // highlight the active section in the sub-nav
   useEffect(() => {
@@ -225,6 +517,7 @@ export default function ProjectDetail() {
 
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
+
     return () => window.removeEventListener('scroll', onScroll);
   }, [id]);
 
@@ -260,6 +553,8 @@ export default function ProjectDetail() {
       .map((s) => s.trim().replace(/\.$/, ''))
       .filter(Boolean)
     : [];
+
+  const projectPhone = p.market === 'Pune' ? SITE.phones[0] : SITE.phones[1];
 
   return (
     <div className="pdx">
@@ -373,14 +668,14 @@ export default function ProjectDetail() {
           </button>
           <p className="pdx-call">
             <Phone size={15} />
-            <a href={SITE.phones[0].href}>{SITE.phones[0].display}</a>
+            <a href={projectPhone.href}>{projectPhone.display}</a>
           </p>
         </div>
       </section>
 
       <section id="gallery" className="w sec">
         <SectionHead eyebrow="Gallery" title={`${p.name} in pictures`} />
-        <Gallery imgs={p.gallery} videos={p.videos} alt={p.name} />
+        <ProjectGallery imgs={p.gallery} videos={p.videos} alt={p.name} />
       </section>
 
       <section id="floor-plans" className="w sec">
@@ -481,12 +776,7 @@ export default function ProjectDetail() {
           </p>
           <p className="cl">
             <Phone size={16} />{' '}
-            {SITE.phones.map((x, i) => (
-              <React.Fragment key={x.href}>
-                {i > 0 && ' · '}
-                <a href={x.href}>{x.display}</a>
-              </React.Fragment>
-            ))}
+            <a href={projectPhone.href}>{projectPhone.display}</a>
           </p>
         </div>
         <div className="card">
@@ -503,7 +793,7 @@ export default function ProjectDetail() {
         <button onClick={() => go('enquire')}>
           Register interest <ArrowRight size={16} />
         </button>
-        <a href={SITE.phones[0].href}>
+        <a href={projectPhone.href}>
           <Phone size={16} /> Call
         </a>
       </div>

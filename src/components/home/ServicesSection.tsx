@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Home, KeyRound, Layers, Building2, UserRound, Globe } from 'lucide-react';
-import { services, IconName } from '@/data/services';
+import { getServices, IconName } from '@/data/services';
 import { Reveal } from '@/components/ui/Reveal';
 import { SectionHead } from '@/components/ui/SectionHead';
+import { useLocationContext } from '@/contexts/LocationContext';
 
 import serviceBg1 from '@/assets/images/service-bg-1.jpg';
 import serviceBg2 from '@/assets/images/service-bg-2.jpg';
@@ -254,6 +255,9 @@ const STYLES = `
 `;
 
 export default function ServicesSection() {
+  const { market, isPune } = useLocationContext();
+  const currentServices = getServices(market);
+
   return (
     <section className="w sec">
       <style>{STYLES}</style>
@@ -261,11 +265,15 @@ export default function ServicesSection() {
         <SectionHead
           eyebrow="What we do"
           title=""
-          sub="Whether you’re buying a luxury residence, acquiring an off-plan unit or investing from abroad, our team handles the full journey."
+          sub={
+            isPune
+              ? 'Whether you’re buying a luxury residence in Pune, acquiring an off-plan unit or investing from abroad, our team handles the full journey.'
+              : 'Whether you’re buying a luxury residence in Dubai, acquiring an off-plan unit or investing from abroad, our team handles the full journey.'
+          }
         />
       </Reveal>
       <div className="sv">
-        {services.map(([t, ic, d, to], k) => {
+        {currentServices.map(([t, ic, d, to], k) => {
           const C = ICONS[ic];
           const bgImg = SERVICE_IMAGES[k % SERVICE_IMAGES.length];
           return (

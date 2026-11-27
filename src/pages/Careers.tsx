@@ -2,25 +2,33 @@ import React from 'react';
 import { MapPin } from 'lucide-react';
 import InnerPageBanner from '@/components/layout/InnerPageBanner';
 import { EnquiryForm } from '@/components/EnquiryForm';
-import { jobs } from '@/data/careers';
+import { getJobs } from '@/data/careers';
 import { CAREER_FIELDS } from '@/data/forms';
+import { useLocationContext } from '@/contexts/LocationContext';
 
 export default function Careers() {
+  const { market, isPune } = useLocationContext();
+  const currentJobs = getJobs(market);
+
   return (
     <>
       <InnerPageBanner
         eyebrow="Careers"
-        title="Build your career with Aurelia"
-        sub="Join a growing team serving clients in Pune and Dubai."
-        img="office.jpg"
+        title={isPune ? 'Build your career in Pune with Aurelia' : 'Build your career in Dubai with Aurelia'}
+        sub={
+          isPune
+            ? 'Join a growing team serving premier clients and developers in Pune, Maharashtra.'
+            : 'Join an international team serving high-net-worth investors and buyers in Dubai, UAE.'
+        }
+        img={isPune ? 'office.jpg' : 'dubai2.jpg'}
         crumbs={[['Home', '/'], ['Careers']]}
       />
 
       <section className="w sec two">
         <div>
-          <h2>Open positions</h2>
+          <h2>Open positions in {isPune ? 'Pune' : 'Dubai'}</h2>
           <div className="jobs">
-            {jobs.map(([t, l, ty]) => (
+            {currentJobs.map(([t, l, ty]) => (
               <div key={t}>
                 <b>{t}</b>
                 <span>

@@ -1,13 +1,17 @@
 import React from 'react';
-import { stats } from '@/data/stats';
+import { getStats } from '@/data/stats';
 import { Count } from '@/components/ui/Count';
+import { useLocationContext } from '@/contexts/LocationContext';
 
 export default function StatsSection() {
+  const { market } = useLocationContext();
+  const activeStats = getStats(market);
+
   return (
     <section className="stats">
       <div className="w">
-        {stats.map(([n, t]) => (
-          <div key={t}>
+        {activeStats.map(([n, t]) => (
+          <div key={`${market}-${t}`}>
             <b>
               <Count v={n} />
             </b>

@@ -1,12 +1,20 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { A } from '@/lib/assets';
+import { useLocationContext } from '@/contexts/LocationContext';
 
-// Existing Hero Section video (Lumena Omniyat / The Opus)
-const CTA_VIDEO_SRC =
+// Existing Dubai CTA video (The Opus by Omniyat)
+const DUBAI_CTA_VIDEO =
   'https://cdn.prod.website-files.com/64cd0df1806781d956403b26/651712fc5af65256949fa279_opus-hero-d-transcode.mp4';
 
+// Premium Pune luxury real estate video (Kolte-Patil luxury residences)
+const PUNE_CTA_VIDEO =
+  'https://www.koltepatil.com/assets/dist/videos/home_main_video_desktop.mp4';
+
 export default function ContactCTA() {
+  const { isPune } = useLocationContext();
+  const videoSrc = isPune ? PUNE_CTA_VIDEO : DUBAI_CTA_VIDEO;
+
   return (
     <section
       className="cta"
@@ -18,8 +26,9 @@ export default function ContactCTA() {
       }}
     >
       <video
-        src={CTA_VIDEO_SRC}
-        poster={A('office.jpg')}
+        key={videoSrc}
+        src={videoSrc}
+        poster={A(isPune ? '24k-manor-1.jpg' : 'office.jpg')}
         autoPlay
         muted
         loop
@@ -35,11 +44,16 @@ export default function ContactCTA() {
         }}
       />
       <div className="w" style={{ position: 'relative', zIndex: 2 }}>
-        <small>Own property in Pune or Dubai?</small>
-        <h2>Sell or lease through a partner you can trust</h2>
+        <small>{isPune ? 'Own property in Pune?' : 'Own property in Dubai?'}</small>
+        <h2>
+          {isPune
+            ? 'Sell or lease your Pune property through a partner you can trust'
+            : 'Sell or lease your Dubai property through a partner you can trust'}
+        </h2>
         <p>
-          List with Aurelia and let our team handle marketing, viewings, contracts and
-          management.
+          {isPune
+            ? 'List with Aurelia in Pune and let our team handle professional marketing, verified viewings, legal agreements and property management.'
+            : 'List with Aurelia in Dubai and let our team handle international marketing, tenant vetting, Ejari and complete property management.'}
         </p>
         <div className="row">
           <Link className="btn gold" to="/list-your-property">

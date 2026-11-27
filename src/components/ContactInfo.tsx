@@ -1,30 +1,35 @@
 import React from 'react';
-import { MapPin, Phone } from 'lucide-react';
-import { SITE } from '@/data/site';
+import { MapPin, Phone, Mail } from 'lucide-react';
+import { useLocationContext } from '@/contexts/LocationContext';
 
-export const ContactInfo = () => (
-  <div className="info">
-    {SITE.offices.map((o) => (
-      <p key={o.city}>
+export const ContactInfo = () => {
+  const { locationInfo, isPune } = useLocationContext();
+
+  return (
+    <div className="info">
+      <p>
         <MapPin size={18} />
         <span>
-          <b>{o.city} Office</b>
-          {o.address}
+          <b>{isPune ? 'Pune Office' : 'Dubai Office'}</b>
+          {locationInfo.address}
         </span>
       </p>
-    ))}
 
-    <p>
-      <Phone size={18} />
-      <span>
-        <b>Phone</b>
-        {SITE.phones.map((p, i) => (
-          <React.Fragment key={p.href}>
-            {i > 0 && <br />}
-            <a href={p.href}>{p.display}</a>
-          </React.Fragment>
-        ))}
-      </span>
-    </p>
-  </div>
-);
+      <p>
+        <Phone size={18} />
+        <span>
+          <b>Phone</b>
+          <a href={locationInfo.phone.href}>{locationInfo.phone.display}</a>
+        </span>
+      </p>
+
+      <p>
+        <Mail size={18} />
+        <span>
+          <b>Email</b>
+          <a href={`mailto:${locationInfo.email}`}>{locationInfo.email}</a>
+        </span>
+      </p>
+    </div>
+  );
+};

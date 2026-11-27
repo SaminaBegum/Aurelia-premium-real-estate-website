@@ -1,16 +1,28 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal } from 'lucide-react';
-import { projects, HERO_PROJECT_IDS } from '@/data';
+import { projects } from '@/data';
 import { A } from '@/lib/assets';
-import { LOCATIONS } from '@/lib/listingFilters';
+import { locationsFor } from '@/lib/listingFilters';
 import { BUY_BANDS, PROPERTY_TYPES } from '@/lib/constants';
 import { fmtAed } from '@/lib/utils';
 import { useSlideshow } from '@/hooks/useSlideshow';
+import { useLocationContext } from '@/contexts/LocationContext';
 
-// Map each hero project ID to its purpose-built, clean b-roll hero video.
-// All URLs confirmed HTTP 200, video/mp4, no burned-in text or watermarks.
-const HERO_VIDEOS: Record<string, string> = {
+// Pune local hero videos
+import puneHero1 from '@/assets/images/pune-hero-1.mp4';
+import puneHero2 from '@/assets/images/pune-hero-2.mp4';
+
+// Existing Dubai hero video slides – unchanged.
+export const DUBAI_HERO_PROJECT_IDS = [
+  'damac-lagoons',
+  'ghaf-woods',
+  'lumena-omniyat',
+  'burj-binghatti-jacob-co',
+];
+
+const DUBAI_HERO_VIDEOS: Record<string, string> = {
   'damac-lagoons':
     'https://videos.ctfassets.net/zoq5l15g49wj/5lT6VSTCWBTxDrNH1bRnLp/db2c7d1ae4447797505fb35a13ade904/Damac_island_Hero_video_16X9.mp4',
   'ghaf-woods':
@@ -21,53 +33,100 @@ const HERO_VIDEOS: Record<string, string> = {
     'https://binghattiweb.imgix.net/hero-desktop-new-1.mp4',
 };
 
-const SLIDES = HERO_PROJECT_IDS.map(id => projects.find(p => p.id === id)!).filter(Boolean);
+// Pune hero slides – two local videos.
+export const PUNE_HERO_PROJECT_IDS = [
+  'rohan-ekam',
+  '24k-manor',
+];
+
+const PUNE_HERO_VIDEOS: Record<string, string> = {
+  '24k-manor': puneHero1,
+  'rohan-ekam': puneHero2,
+};
 
 export default function HeroSection() {
   const nav = useNavigate();
-  const [i, go] = useSlideshow(SLIDES.length);
-  const [f, setF] = useState({ loc: '', type: '', min: '', max: '' });
+  const { market, isPune } = useLocationContext();
+
+  const heroIds = isPune
+    ? PUNE_HERO_PROJECT_IDS
+    : DUBAI_HERO_PROJECT_IDS;
+
+  const heroVideos = isPune
+    ? PUNE_HERO_VIDEOS
+    : DUBAI_HERO_VIDEOS;
+
+  const slides = heroIds
+    .map(id => projects.find(p => p.id === id))
+    .filter(Boolean);
+
+  const [i, go] = useSlideshow(slides.length);
+  const [f, setF] = useState({
+    loc: '',
+    type: '',
+    min: '',
+    max: '',
+  });
+
   const [more, setMore] = useState(false);
   const bands = BUY_BANDS;
+  const availableLocations = locationsFor(market);
 
-  // One ref per slide so we can pause/play individual <video> elements.
-  const videoRefs = useRef<(HTMLVideoElement | null)[]>(SLIDES.map(() => null));
-
-  // When the active slide index changes: pause all, then play the active one from 0.
+  // Reset slide and filters when location changes.
   useEffect(() => {
-    videoRefs.current.forEach((v, k) => {
-      if (!v) return;
-      if (k === i) {
-        v.currentTime = 0;
-        v.play().catch(() => {/* autoplay policy – silent, muted so it always works */ });
+    go(0);
+    setF({ loc: '', type: '', min: '', max: '' });
+  }, [market]);
+
+  // Video references.
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+
+  // Play active video and pause inactive videos.
+  useEffect(() => {
+    videoRefs.current.forEach((video, index) => {
+      if (!video) return;
+
+      if (index === i) {
+        video.currentTime = 0;
+        video.play().catch(() => { });
       } else {
-        v.pause();
+        video.pause();
       }
     });
-  }, [i]);
+  }, [i, market]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+
     const q = new URLSearchParams();
-    Object.entries(f).forEach(([k, v]) => v && q.set(k, v));
+    q.set('market', market);
+
+    Object.entries(f).forEach(([k, v]) => {
+      if (v) q.set(k, v);
+    });
+
     nav('/properties?' + q);
   };
 
+  const currentSlide = slides[i] || slides[0];
+
   return (
     <section className="hero">
-      {SLIDES.map((s, k) => {
-        const videoSrc = HERO_VIDEOS[s.id] ?? '';
+      {slides.map((s, k) => {
+        const videoSrc = heroVideos[s.id] ?? '';
+
         return (
           <div
-            key={s.id}
+            key={`${market}-${s.id}`}
             className={'hs' + (k === i ? ' on' : '')}
-            // poster image as background so there is never a black frame
             style={{ backgroundImage: `url(${A(s.img)})` }}
             aria-hidden="true"
           >
             {videoSrc && (
               <video
-                ref={el => { videoRefs.current[k] = el; }}
+                ref={el => {
+                  videoRefs.current[k] = el;
+                }}
                 src={videoSrc}
                 poster={A(s.img)}
                 muted
@@ -76,73 +135,163 @@ export default function HeroSection() {
                 preload={k === 0 ? 'auto' : 'metadata'}
               />
             )}
+
+            {isPune && (
+              <style>{`
+                .hero .hs.on video,
+                .hero .hs video {
+                  filter: none !important;
+                  opacity: 1 !important;
+                }
+              `}</style>
+            )}
           </div>
         );
       })}
 
       <div className="w hero-in">
-        <small className="eyebrow">Pune&nbsp;|&nbsp; Dubai&nbsp;|&nbsp; Partner Developers</small>
-        <h1>Invest. Live. Grow.<br />Across Pune &amp; Dubai</h1>
-        <p>Curated properties from top developers for homebuyers and investors in India and the UAE — managed from search to handover.</p>
+        <small className="eyebrow">
+          {isPune
+            ? 'Pune | India | Partner Developers'
+            : 'Dubai | UAE | Partner Developers'}
+        </small>
+
+        <h1>
+          Invest. Live. Grow.<br />
+          {isPune
+            ? 'Across Pune, India'
+            : 'Across Dubai, UAE'}
+        </h1>
+
+        <p>
+          {isPune
+            ? 'Curated luxury properties from top builders for homebuyers and investors in Pune — managed from search to handover.'
+            : 'Curated properties from top developers for homebuyers and investors in Dubai & the UAE — managed from search to handover.'}
+        </p>
+
         <form className="hsb" onSubmit={submit}>
           <div className="hsb-r">
             <label>
               <span>Location</span>
-              <select value={f.loc} onChange={e => setF({ ...f, loc: e.target.value })}>
+              <select
+                value={f.loc}
+                onChange={e =>
+                  setF({ ...f, loc: e.target.value })
+                }
+              >
                 <option value="">Any location</option>
-                {LOCATIONS.map(l => <option key={l}>{l}</option>)}
+                {availableLocations.map(l => (
+                  <option key={l}>{l}</option>
+                ))}
               </select>
             </label>
+
             <label>
               <span>Type</span>
-              <select value={f.type} onChange={e => setF({ ...f, type: e.target.value })}>
+              <select
+                value={f.type}
+                onChange={e =>
+                  setF({ ...f, type: e.target.value })
+                }
+              >
                 <option value="">Any type</option>
-                {PROPERTY_TYPES.map(t => <option key={t}>{t}</option>)}
+                {PROPERTY_TYPES.map(t => (
+                  <option key={t}>{t}</option>
+                ))}
               </select>
             </label>
-            <button className="btn" type="submit"><Search size={16} /> Search</button>
-            <button type="button" className="mf" onClick={() => setMore(!more)} aria-expanded={more}>
+
+            <button className="btn" type="submit">
+              <Search size={16} /> Search
+            </button>
+
+            <button
+              type="button"
+              className="mf"
+              onClick={() => setMore(!more)}
+              aria-expanded={more}
+            >
               <SlidersHorizontal size={15} /> More filters
             </button>
           </div>
+
           {more && (
             <div className="hsb-m">
               <label>
-                <span>Min price</span>
-                <select value={f.min} onChange={e => setF({ ...f, min: e.target.value })}>
+                <span>
+                  {isPune ? 'Min price' : 'Min price (AED)'}
+                </span>
+
+                <select
+                  value={f.min}
+                  onChange={e =>
+                    setF({ ...f, min: e.target.value })
+                  }
+                >
                   <option value="">No min</option>
-                  {bands.map(o => <option key={o} value={o}>{fmtAed(o)}</option>)}
+
+                  {bands.map(o => (
+                    <option key={o} value={o}>
+                      {isPune
+                        ? `₹ ${(o * 23 / 1e7).toFixed(1)} Cr`
+                        : fmtAed(o)}
+                    </option>
+                  ))}
                 </select>
               </label>
+
               <label>
-                <span>Max price</span>
-                <select value={f.max} onChange={e => setF({ ...f, max: e.target.value })}>
+                <span>
+                  {isPune ? 'Max price' : 'Max price (AED)'}
+                </span>
+
+                <select
+                  value={f.max}
+                  onChange={e =>
+                    setF({ ...f, max: e.target.value })
+                  }
+                >
                   <option value="">No max</option>
-                  {bands.map(o => <option key={o} value={o}>{fmtAed(o)}</option>)}
+
+                  {bands.map(o => (
+                    <option key={o} value={o}>
+                      {isPune
+                        ? `₹ ${(o * 23 / 1e7).toFixed(1)} Cr`
+                        : fmtAed(o)}
+                    </option>
+                  ))}
                 </select>
               </label>
-              <p>Pune prices are matched on AED equivalent (1 AED ≈ ₹23).</p>
+
+              <p>
+                {isPune
+                  ? 'Showing verified residential and commercial properties in Pune, India.'
+                  : 'Showing verified freehold luxury properties in Dubai, UAE.'}
+              </p>
             </div>
           )}
         </form>
       </div>
 
-      <div className="hcap">
-        <Link to={'/exclusive-projects/' + SLIDES[i].id}>
-          <b>{SLIDES[i].name}</b>
-          <span>{SLIDES[i].loc}</span>
-        </Link>
-        <div>
-          {SLIDES.map((s, k) => (
-            <button
-              key={s.id}
-              className={k === i ? 'on' : ''}
-              onClick={() => go(k)}
-              aria-label={'Show ' + s.name}
-            />
-          ))}
+      {currentSlide && (
+        <div className="hcap">
+          <Link to={'/exclusive-projects/' + currentSlide.id}>
+            <b>{currentSlide.name}</b>
+            <span>{currentSlide.loc}</span>
+          </Link>
+
+          <div>
+            {slides.map((s, k) => (
+              <button
+                key={s.id}
+                className={k === i ? 'on' : ''}
+                onClick={() => go(k)}
+                aria-label={'Show ' + s.name}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }

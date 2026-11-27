@@ -11,10 +11,14 @@ import {
 } from 'lucide-react';
 import { A } from '@/lib/assets';
 import { SITE } from '@/data/site';
-import { FOOTER_EXPLORE, FOOTER_COMPANY } from '@/data/navigation';
+import { getFooterExplore, FOOTER_COMPANY } from '@/data/navigation';
 import { post } from '@/api/api';
+import { useLocationContext } from '@/contexts/LocationContext';
 
 export default function Footer() {
+  const { market, locationInfo } = useLocationContext();
+  const exploreLinks = getFooterExplore(market);
+
   const links = (items: [string, string][]) =>
     items.map(([t, to]) => (
       <Link key={t} to={to}>
@@ -36,10 +40,7 @@ export default function Footer() {
       <div className="ft-in">
         <div className="ft-brand">
           <img src={A('logo-new.png')} alt={SITE.name} />
-          <p>
-            {SITE.tagline} Premium real estate in Pune and Dubai — from first search to
-            final handover.
-          </p>
+          <p>{locationInfo.footerTagline}</p>
           <div className="soc">
             <a href={SITE.socials.linkedin} aria-label="LinkedIn">
               <Linkedin size={18} />
@@ -58,7 +59,7 @@ export default function Footer() {
 
         <div>
           <h5>Explore</h5>
-          {links(FOOTER_EXPLORE)}
+          {links(exploreLinks)}
         </div>
 
         <div>
@@ -68,16 +69,12 @@ export default function Footer() {
 
         <div>
           <h5>Get in Touch</h5>
-          {SITE.offices.map((o) => (
-            <p key={o.city}>
-              <MapPin size={14} /> {o.address}
-            </p>
-          ))}
-          {SITE.phones.map((p) => (
-            <p key={p.href}>
-              <Phone size={14} /> <a href={p.href}>{p.display}</a>
-            </p>
-          ))}
+          <p>
+            <MapPin size={14} /> {locationInfo.address}
+          </p>
+          <p>
+            <Phone size={14} /> <a href={locationInfo.phone.href}>{locationInfo.phone.display}</a>
+          </p>
 
           <h6>Subscribe for latest properties</h6>
           <form onSubmit={subscribe} className="sub">

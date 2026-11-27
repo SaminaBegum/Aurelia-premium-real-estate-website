@@ -16,3 +16,4 @@ export * from './invest';
 export * from './privacy';
 export * from './forms';
 export * from './paymentPlans';
+export * from './testimonials';

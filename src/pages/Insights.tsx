@@ -2,22 +2,30 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import InnerPageBanner from '@/components/layout/InnerPageBanner';
 import { Reveal } from '@/components/ui/Reveal';
-import { articles } from '@/data/articles';
+import { getArticles } from '@/data/articles';
+import { useLocationContext } from '@/contexts/LocationContext';
 
 export default function Insights() {
+  const { market, isPune } = useLocationContext();
+  const currentArticles = getArticles(market);
+
   return (
     <>
       <InnerPageBanner
         eyebrow="Insights"
-        title="Market notes & guides"
-        sub="For buyers and investors in Pune and Dubai."
-        img="interior.jpg"
+        title={isPune ? 'Pune Market Notes & Guides' : 'Dubai Market Notes & Guides'}
+        sub={
+          isPune
+            ? 'In-depth market research and buying guides for Pune homebuyers and investors.'
+            : 'In-depth market research and investment guides for Dubai freehold property buyers.'
+        }
+        img={isPune ? 'interior.jpg' : 'dubai3.jpg'}
         crumbs={[['Home', '/'], ['Insights']]}
       />
 
       <section className="w sec">
         <div className="grid g4">
-          {articles.map(([t, c, d], k) => (
+          {currentArticles.map(([t, c, d], k) => (
             <Reveal key={t} d={k * 60}>
               <article className="art">
                 <span className="chip">{c}</span>

@@ -1,14 +1,18 @@
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { projects } from '@/data/projects';
+import { getProjects } from '@/api/api';
 import { ProjectCard } from '@/components/ProjectCard';
 import { Reveal } from '@/components/ui/Reveal';
 import { SectionHead } from '@/components/ui/SectionHead';
+import { useLocationContext } from '@/contexts/LocationContext';
 
-const SPEED = 0.6; // px per frame (~36px/sec) - badhana ho to value badha do
+const SPEED = 0.6; // px per frame (~36px/sec)
 
 export default function ProjectsRail() {
+  const { market, isPune } = useLocationContext();
+  const projectsList = getProjects(market);
+
   const rail = useRef<HTMLDivElement>(null);
   const paused = useRef(false);
   const pos = useRef(0);
@@ -16,9 +20,9 @@ export default function ProjectsRail() {
   // width of one full set of cards (distance from first card to its duplicate)
   const loopWidth = () => {
     const el = rail.current;
-    if (!el || el.children.length <= projects.length) return 0;
+    if (!el || el.children.length <= projectsList.length) return 0;
     const first = el.children[0] as HTMLElement;
-    const dup = el.children[projects.length] as HTMLElement;
+    const dup = el.children[projectsList.length] as HTMLElement;
     return dup.offsetLeft - first.offsetLeft;
   };
 
@@ -26,7 +30,7 @@ export default function ProjectsRail() {
     const el = rail.current;
     if (!el) return;
     const w = loopWidth();
-    if (w && el.scrollLeft + d < 0) el.scrollLeft += w; // jump forward by one set so left arrow can go back
+    if (w && el.scrollLeft + d < 0) el.scrollLeft += w;
     el.scrollBy({ left: d, behavior: 'smooth' });
   };
 
@@ -46,14 +50,14 @@ export default function ProjectsRail() {
         if (pos.current >= w) pos.current -= w;
         el.scrollLeft = pos.current;
       } else {
-        pos.current = el.scrollLeft; // keep in sync with manual scroll / arrows
+        pos.current = el.scrollLeft;
       }
-      if (w && el.scrollLeft >= w) el.scrollLeft -= w; // seamless loop for manual scrolling too
+      if (w && el.scrollLeft >= w) el.scrollLeft -= w;
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [market, projectsList.length]);
 
   const pause = () => { paused.current = true; };
   const play = () => { paused.current = false; };
@@ -63,9 +67,17 @@ export default function ProjectsRail() {
       <Reveal>
         <SectionHead
           eyebrow="Off-plan"
-          title="Exclusive off-plan projects"
-          sub="Hand-picked developments with strong fundamentals, backed end-to-end by our team."
-          right={<Link className="btn-o" to="/exclusive-projects">View all projects <ArrowRight size={16} /></Link>}
+          title={isPune ? 'Exclusive Pune off-plan projects' : 'Exclusive Dubai off-plan projects'}
+          sub={
+            isPune
+              ? 'Hand-picked Pune developments with strong fundamentals, backed end-to-end by our team.'
+              : 'Hand-picked Dubai developments with strong fundamentals, backed end-to-end by our team.'
+          }
+          right={
+            <Link className="btn-o" to={`/exclusive-projects?market=${market}`}>
+              View all projects <ArrowRight size={16} />
+            </Link>
+          }
         />
       </Reveal>
       <div className="rail-w">
@@ -80,8 +92,8 @@ export default function ProjectsRail() {
           onFocus={pause}
           onBlur={play}
         >
-          {[...projects, ...projects].map((p, i) => (
-            <ProjectCard key={`${p.id}-${i}`} p={p} />
+          {[...projectsList, ...projectsList].map((p, i) => (
+            <ProjectCard key={`${market}-${p.id}-${i}`} p={p} />
           ))}
         </div>
         <button className="arr r" aria-label="Next" onClick={() => by(340)}><ArrowRight /></button>

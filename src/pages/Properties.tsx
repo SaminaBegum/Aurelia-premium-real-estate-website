@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import InnerPageBanner from '@/components/layout/InnerPageBanner';
@@ -8,22 +8,35 @@ import { getListings } from '@/api/api';
 import { BUY_BANDS, PROPERTY_TYPES } from '@/lib/constants';
 import { filterListings, locationsFor, paginate, readFilters } from '@/lib/listingFilters';
 import { fmtAed } from '@/lib/utils';
+import { useLocationContext } from '@/contexts/LocationContext';
 
 export default function Properties() {
   const [q, setQ] = useSearchParams();
   const [open, setOpen] = useState(false);
   const top = useRef<HTMLElement>(null);
+  const { market, setMarket, isPune } = useLocationContext();
 
   const f = readFilters((k) => q.get(k) || '');
+  // Always enforce the active location's market so content is completely separated
+  f.market = market;
 
   const set = (o: Record<string, string | number>, keepPage = false) => {
     const n = new URLSearchParams(q);
     Object.entries(o).forEach(([k, v]) => (v ? n.set(k, String(v)) : n.delete(k)));
+    n.set('market', market);
     if (!keepPage) n.delete('page');
-    setQ(n, { replace: true });
+    setQ(n, { replace: true, preventScrollReset: true });
   };
 
-  const list = useMemo(() => filterListings(f, getListings()), [q]);
+  useEffect(() => {
+    if (q.get('market') && q.get('market') !== market) {
+      const n = new URLSearchParams(q);
+      n.set('market', market);
+      setQ(n, { replace: true, preventScrollReset: true });
+    }
+  }, [market]);
+
+  const list = useMemo(() => filterListings(f, getListings(market)), [q, market]);
   const pg = paginate(list, f.page);
   const bands = BUY_BANDS;
 
@@ -46,7 +59,7 @@ export default function Properties() {
         <option value="">{`No ${key}`}</option>
         {bands.map((o) => (
           <option key={o} value={o}>
-            {fmtAed(o)}
+            {isPune ? `₹ ${(o * 23 / 1e7).toFixed(1)} Cr` : fmtAed(o)}
           </option>
         ))}
       </select>
@@ -56,9 +69,13 @@ export default function Properties() {
   return (
     <>
       <InnerPageBanner
-        title="Properties for Sale"
-        sub="Verified luxury residential and commercial properties across Pune and Dubai."
-        img="interior.jpg"
+        title={isPune ? 'Pune Properties for Sale' : 'Dubai Properties for Sale'}
+        sub={
+          isPune
+            ? 'Verified luxury residential and commercial properties across Pune, India.'
+            : 'Verified luxury residential and commercial properties across Dubai, UAE.'
+        }
+        img={isPune ? 'interior.jpg' : 'dubai1.jpg'}
         crumbs={[['Home', '/'], ['Properties']]}
       />
 
@@ -71,12 +88,14 @@ export default function Properties() {
           <div className="fg">
             <span>Market</span>
             <Seg
-              v={f.market}
-              set={(v) => set({ market: v, loc: '' })}
+              v={market}
+              set={(v) => {
+                const target = v === 'Dubai' ? 'Dubai' : 'Pune';
+                setMarket(target);
+              }}
               opts={[
-                ['', 'All'],
-                ['Pune', 'Pune'],
-                ['Dubai', 'Dubai'],
+                ['Pune', 'Pune (India)'],
+                ['Dubai', 'Dubai (UAE)'],
               ]}
             />
           </div>
@@ -101,7 +120,7 @@ export default function Properties() {
             <span>Location</span>
             <select value={f.loc} onChange={(e) => set({ loc: e.target.value })}>
               <option value="">Any location</option>
-              {locationsFor(f.market).map((l) => (
+              {locationsFor(market).map((l) => (
                 <option key={l}>{l}</option>
               ))}
             </select>
@@ -120,8 +139,8 @@ export default function Properties() {
             </select>
           </label>
 
-          {priceSel('Min price', 'min', f.min)}
-          {priceSel('Max price', 'max', f.max)}
+          {priceSel(isPune ? 'Min price' : 'Min price (AED)', 'min', f.min)}
+          {priceSel(isPune ? 'Max price' : 'Max price (AED)', 'max', f.max)}
 
           <label className="fg">
             <span>Sort</span>
@@ -132,14 +151,14 @@ export default function Properties() {
             </select>
           </label>
 
-          <button className="lk reset" onClick={() => setQ({}, { replace: true })}>
+          <button className="lk reset" onClick={() => setQ({ market }, { replace: true })}>
             Reset all
           </button>
         </div>
 
         <p className="cnt">
-          <b>{list.length}</b> {list.length === 1 ? 'property' : 'properties'}
-          {' · prices filtered by AED equivalent (1 AED ≈ ₹23)'}
+          <b>{list.length}</b> {list.length === 1 ? 'property' : 'properties'} in {market}
+          {isPune ? ' · prices in INR (₹ Crores & Lakhs)' : ' · prices in AED'}
         </p>
 
         <div className="grid g3">
@@ -152,7 +171,7 @@ export default function Properties() {
           <div className="empty">
             <h3>No properties match these filters</h3>
             <p>Try widening your budget or location.</p>
-            <button className="btn" onClick={() => setQ({}, { replace: true })}>
+            <button className="btn" onClick={() => setQ({ market }, { replace: true })}>
               Reset filters
             </button>
           </div>

@@ -1,7 +1,8 @@
 import React from 'react';
-import { developers } from '@/data/developers';
+import { getDevelopers } from '@/data/developers';
 import { DeveloperLogo } from '@/components/DeveloperLogo';
 import { Reveal } from '@/components/ui/Reveal';
+import { useLocationContext } from '@/contexts/LocationContext';
 
 /* dark border around the developer partners box */
 const STYLES = `
@@ -12,14 +13,17 @@ const STYLES = `
 `;
 
 export default function DevelopersMarquee() {
+  const { market, isPune } = useLocationContext();
+  const devs = getDevelopers(market);
+
   return (
     <>
       <style>{STYLES}</style>
       <Reveal className="w partners dev-border">
-        <h3>Our developer partners</h3>
+        <h3>{isPune ? 'Our Pune developer partners' : 'Our Dubai developer partners'}</h3>
         <div className="mq">
           <div className="mq-t">
-            {[...developers, ...developers].map((d, k) => (
+            {[...devs, ...devs].map((d, k) => (
               <DeveloperLogo key={k} d={d} />
             ))}
           </div>

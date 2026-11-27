@@ -4,27 +4,42 @@ import { Reveal } from '@/components/ui/Reveal';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { EnquiryForm } from '@/components/EnquiryForm';
 import { ContactInfo } from '@/components/ContactInfo';
-import { managementSteps } from '@/data/management';
+import { getManagementSteps } from '@/data/management';
 import { NAME_FIELDS, MESSAGE_FIELD } from '@/data/forms';
+import { useLocationContext } from '@/contexts/LocationContext';
 
 export default function PropertyManagement() {
+  const { market, isPune } = useLocationContext();
+  const steps = getManagementSteps(market);
+
   return (
     <>
       <InnerPageBanner
         eyebrow="For landlords"
-        title="Peace of mind for landlords"
-        sub="We have your rental property under control — from tenant sourcing to maintenance and rent collection, we handle the day-to-day so you don’t have to."
-        img="interior.jpg"
+        title={isPune ? 'Peace of mind for Pune landlords' : 'Peace of mind for Dubai landlords'}
+        sub={
+          isPune
+            ? 'We have your Pune rental property under control — verified IT tenant sourcing, leave & license deeds, rent collection, and routine maintenance.'
+            : 'Turnkey property management in Dubai — RERA-compliant tenant vetting, Ejari registration, DEWA coordination, and maximum rental yields.'
+        }
+        img={isPune ? 'interior.jpg' : 'dubai1.jpg'}
         crumbs={[['Home', '/'], ['Property Management']]}
       />
 
       <section className="w sec">
         <Reveal>
-          <SectionHead eyebrow="Our process" title="How we manage your investment" />
+          <SectionHead
+            eyebrow="Our process"
+            title={
+              isPune
+                ? 'How we manage your Pune property'
+                : 'How we manage your Dubai investment'
+            }
+          />
         </Reveal>
 
         <div className="steps">
-          {managementSteps.map(([t, d], k) => (
+          {steps.map(([t, d], k) => (
             <Reveal key={t} d={k * 70}>
               <div className="stp">
                 <b>{k + 1}</b>
@@ -39,10 +54,15 @@ export default function PropertyManagement() {
       <section className="w sec two enq">
         <div>
           <small className="eb">Get started</small>
-          <h2>Speak to our property management team</h2>
+          <h2>
+            {isPune
+              ? 'Speak to our Pune property management team'
+              : 'Speak to our Dubai property management team'}
+          </h2>
           <p>
-            Reach out for a free rental valuation, or leave your details and we’ll call
-            you back.
+            {isPune
+              ? 'Reach out for a free rental valuation for your Pune home or commercial unit, or leave your details below.'
+              : 'Reach out for an expert rental yield valuation of your Dubai property, or leave your details below.'}
           </p>
           <ContactInfo />
         </div>

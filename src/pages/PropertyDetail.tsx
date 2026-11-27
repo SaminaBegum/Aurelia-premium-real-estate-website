@@ -1,20 +1,23 @@
-import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   MapPin, BedDouble, Bath, Ruler, Building, Check, Phone, ArrowRight,
   Waves, Dumbbell, Trees, Baby, Users, Car, ShieldCheck, Zap, Trophy, Film, Building2,
+  ChevronLeft, ChevronRight, X, Images,
 } from 'lucide-react';
 import InnerPageBanner from '@/components/layout/InnerPageBanner';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { SectionHead } from '@/components/ui/SectionHead';
-import { Gallery } from '@/components/Gallery';
 import { EnquiryForm } from '@/components/EnquiryForm';
 import { ListingCard } from '@/components/ListingCard';
 import { MortgageCalculator } from '@/components/MortgageCalculator';
 import { getListing, getSimilarListings } from '@/api/api';
+import { listings } from '@/data/listings';
 import { ENQUIRY_FIELDS } from '@/data/forms';
 import { SITE } from '@/data/site';
+import { A } from '@/lib/assets';
 import { money } from '@/lib/format';
+import { useLocationContext } from '@/contexts/LocationContext';
 
 /* All new styles are scoped under .prx so other pages are not affected.
    Colours stay the existing Aurelia gold / black / cream. */
@@ -39,6 +42,67 @@ const CSS = `
 .prx .pdp b{font-size:2rem;line-height:1.1;color:var(--g2);font-weight:700}
 .prx .pdp small{color:rgba(255,255,255,.6);font-size:.8rem}
 @media(max-width:720px){.prx .pdp{text-align:left;width:100%}}
+
+/* ---------- Gallery (photo mosaic + lightbox) ---------- */
+.prx .gx-mosaic{position:relative;display:grid;gap:.7rem;height:clamp(300px,42vw,500px);border-radius:16px;overflow:hidden}
+.prx .gx-tile{position:relative;padding:0;border:0;background:#e9e4d8;cursor:pointer;overflow:hidden;display:block;min-height:0}
+.prx .gx-tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.prx .gx-tile:hover img{transform:scale(1.06)}
+.prx .gx-tile::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(0,0,0,.25));opacity:0;transition:opacity .3s}
+.prx .gx-tile:hover::after{opacity:1}
+.prx .gx-more{position:absolute;inset:0;z-index:1;display:grid;place-items:center;background:rgba(0,0,0,.55);color:#fff;
+  font-size:1.5rem;font-weight:600;letter-spacing:.02em;backdrop-filter:blur(2px)}
+.prx .gx-all{position:absolute;right:1rem;bottom:1rem;z-index:2;display:inline-flex;align-items:center;gap:.5rem;
+  padding:.65rem 1.1rem;border-radius:99px;border:1px solid rgba(255,255,255,.6);background:rgba(0,0,0,.72);
+  color:#fff;font-weight:500;font-size:.9rem;cursor:pointer;backdrop-filter:blur(6px);transition:background .25s,border-color .25s}
+.prx .gx-all:hover{background:var(--g);border-color:var(--g)}
+
+/* layouts by number of tiles shown */
+.prx .gx-m1{grid-template-columns:1fr}
+.prx .gx-m2{grid-template-columns:1fr 1fr}
+.prx .gx-m3{grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr}
+.prx .gx-m3 .gx-tile:first-child{grid-row:1/3}
+.prx .gx-m4{grid-template-columns:2fr 1fr;grid-template-rows:repeat(3,1fr)}
+.prx .gx-m4 .gx-tile:first-child{grid-row:1/4}
+.prx .gx-m5{grid-template-columns:2fr 1fr 1fr;grid-template-rows:1fr 1fr}
+.prx .gx-m5 .gx-tile:first-child{grid-row:1/3}
+
+@media(max-width:720px){
+  .prx .gx-mosaic{height:auto}
+  .prx .gx-m2,.prx .gx-m3,.prx .gx-m4,.prx .gx-m5{grid-template-columns:1fr 1fr;grid-template-rows:none}
+  .prx .gx-mosaic .gx-tile{aspect-ratio:4/3}
+  .prx .gx-mosaic .gx-tile:first-child{grid-column:1/3;grid-row:auto;aspect-ratio:16/10}
+  .prx .gx-m1 .gx-tile{aspect-ratio:16/10}
+  .prx .gx-all{right:.6rem;bottom:.6rem;font-size:.8rem;padding:.5rem .85rem}
+}
+
+/* lightbox */
+.prx .gx-lb{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.94);display:flex;flex-direction:column;
+  animation:gxFade .25s ease both}
+@keyframes gxFade{from{opacity:0}to{opacity:1}}
+.prx .gx-lb-top{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.4rem;color:#fff;font-size:.95rem}
+.prx .gx-lb-top span{color:var(--g2);letter-spacing:.06em}
+.prx .gx-lb-x,.prx .gx-lb-nav{display:grid;place-items:center;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);
+  color:#fff;border-radius:50%;cursor:pointer;transition:background .25s,border-color .25s}
+.prx .gx-lb-x{width:42px;height:42px}
+.prx .gx-lb-x:hover,.prx .gx-lb-nav:hover{background:var(--g);border-color:var(--g);color:#000}
+.prx .gx-lb-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 4.5rem}
+.prx .gx-lb-stage img{max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 30px 80px -20px rgba(0,0,0,.8)}
+.prx .gx-lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px}
+.prx .gx-lb-nav.p{left:1rem}
+.prx .gx-lb-nav.n{right:1rem}
+.prx .gx-lb-strip{display:flex;gap:.55rem;overflow-x:auto;padding:1rem 1.2rem 1.2rem;justify-content:safe center;scrollbar-width:thin}
+.prx .gx-lb-strip button{flex:none;width:84px;height:58px;padding:0;border-radius:8px;overflow:hidden;border:2px solid transparent;
+  background:#222;cursor:pointer;opacity:.55;transition:opacity .25s,border-color .25s}
+.prx .gx-lb-strip button.on{opacity:1;border-color:var(--g)}
+.prx .gx-lb-strip img{width:100%;height:100%;object-fit:cover;display:block}
+@media(max-width:720px){
+  .prx .gx-lb-stage{padding:0 .5rem}
+  .prx .gx-lb-nav{width:40px;height:40px}
+  .prx .gx-lb-nav.p{left:.4rem}
+  .prx .gx-lb-nav.n{right:.4rem}
+  .prx .gx-lb-strip button{width:64px;height:46px}
+}
 
 /* ---------- Details band ---------- */
 .prx .det{background:#fff;box-shadow:0 0 0 100vmax #fff;clip-path:inset(0 -100vmax)}
@@ -120,9 +184,155 @@ const amenityIcon = (name: string) => {
   return <Check size={sz} />;
 };
 
+/* ====================================================================
+   Photo gallery: 1 big + up to 4 small tiles in an equal-height grid,
+   "+N" overlay on the last tile, and a full-screen lightbox
+   (arrows, keyboard, thumbnails) for the rest.
+   ==================================================================== */
+function PropertyGallery({ imgs, alt }: { imgs: string[]; alt: string }) {
+  const photos = (imgs || []).map((s) => A(s));
+  const [lb, setLb] = useState<number | null>(null);
+
+  const close = useCallback(() => setLb(null), []);
+  const step = useCallback(
+    (d: number) =>
+      setLb((i) => (i === null || !photos.length ? i : (i + d + photos.length) % photos.length)),
+    [photos.length],
+  );
+
+  // keyboard + body scroll lock while lightbox is open
+  useEffect(() => {
+    if (lb === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+      if (e.key === 'ArrowRight') step(1);
+      if (e.key === 'ArrowLeft') step(-1);
+    };
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [lb, close, step]);
+
+  if (!photos.length) return null;
+
+  const shown = photos.slice(0, 5);
+  const extra = photos.length - shown.length;
+
+  return (
+    <>
+      <div className={`gx-mosaic gx-m${shown.length}`}>
+        {shown.map((src, i) => (
+          <button
+            key={src + i}
+            className="gx-tile"
+            onClick={() => setLb(i)}
+            aria-label={`Open photo ${i + 1}`}
+          >
+            <img src={src} alt={`${alt} ${i + 1}`} loading={i === 0 ? 'eager' : 'lazy'} />
+            {i === shown.length - 1 && extra > 0 && <span className="gx-more">+{extra}</span>}
+          </button>
+        ))}
+        {photos.length > 1 && (
+          <button className="gx-all" onClick={() => setLb(0)}>
+            <Images size={16} /> View all {photos.length} photos
+          </button>
+        )}
+      </div>
+
+      {lb !== null && (
+        <div
+          className="gx-lb"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${alt} gallery`}
+          onClick={(e) => e.target === e.currentTarget && close()}
+        >
+          <div className="gx-lb-top" onClick={(e) => e.stopPropagation()}>
+            <span>
+              {alt} · {lb + 1} / {photos.length}
+            </span>
+            <button className="gx-lb-x" onClick={close} aria-label="Close">
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="gx-lb-stage" onClick={(e) => e.target === e.currentTarget && close()}>
+            {photos.length > 1 && (
+              <button className="gx-lb-nav p" onClick={() => step(-1)} aria-label="Previous">
+                <ChevronLeft size={24} />
+              </button>
+            )}
+
+            <img key={photos[lb]} src={photos[lb]} alt={`${alt} ${lb + 1}`} />
+
+            {photos.length > 1 && (
+              <button className="gx-lb-nav n" onClick={() => step(1)} aria-label="Next">
+                <ChevronRight size={24} />
+              </button>
+            )}
+          </div>
+
+          {photos.length > 1 && (
+            <div className="gx-lb-strip" onClick={(e) => e.stopPropagation()}>
+              {photos.map((src, i) => (
+                <button
+                  key={src + i}
+                  className={i === lb ? 'on' : ''}
+                  onClick={() => setLb(i)}
+                  aria-label={`Go to photo ${i + 1}`}
+                >
+                  <img src={src} alt="" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function PropertyDetail() {
   const { id = '' } = useParams();
-  const l = getListing(id);
+  const { market } = useLocationContext();
+  const navigate = useNavigate();
+
+  // Find listing strictly belonging to the currently active market
+  const exact = useMemo(() => listings.find((item) => item.id === id && item.market === market), [id, market]);
+
+  // If not found in active market, check if this ID belongs to the previous market to find an equivalent
+  const prevL = useMemo(() => (!exact ? listings.find((item) => item.id === id) : undefined), [exact, id]);
+
+  const equivL = useMemo(() => {
+    if (!prevL) return undefined;
+    const targetListings = listings.filter((item) => item.market === market);
+    if (!targetListings.length) return undefined;
+    return (
+      targetListings.find((item) => item.dev.toLowerCase() === prevL.dev.toLowerCase()) ||
+      targetListings.find(
+        (item) => item.category === prevL.category && item.type.toLowerCase() === prevL.type.toLowerCase()
+      ) ||
+      targetListings.find((item) => item.category === prevL.category) ||
+      targetListings[0]
+    );
+  }, [prevL, market]);
+
+  const l = exact || equivL;
+
+  // Sync route if viewing an equivalent listing in the new market
+  useEffect(() => {
+    if (!exact && prevL) {
+      if (equivL) {
+        navigate(`/properties/${equivL.id}`, { replace: true });
+      } else {
+        navigate('/properties', { replace: true });
+      }
+    }
+  }, [exact, prevL, equivL, navigate]);
 
   if (!l)
     return (
@@ -186,7 +396,7 @@ export default function PropertyDetail() {
       </section>
 
       <section className="w">
-        <Gallery imgs={l.gallery} alt={l.title} />
+        <PropertyGallery imgs={l.gallery} alt={l.title} />
       </section>
 
       <section className="w sec det">
@@ -255,7 +465,7 @@ export default function PropertyDetail() {
               <div>
                 <b>Aurelia Property Consultant</b>
                 {SITE.phones
-                  .filter((p) => p.label === 'India' || l.market === 'Dubai')
+                  .filter((p) => (l.market === 'Pune' ? p.label === 'India' : p.label === 'UAE'))
                   .map((p) => (
                     <a key={p.href} href={p.href}>
                       {p.display}
@@ -289,7 +499,7 @@ export default function PropertyDetail() {
         <button onClick={goEnquire}>
           Request a viewing <ArrowRight size={16} />
         </button>
-        <a href={SITE.phones[0].href}>
+        <a href={(l.market === 'Pune' ? SITE.phones[0] : SITE.phones[1]).href}>
           <Phone size={16} /> Call
         </a>
       </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, Check } from 'lucide-react';
+import { useLocationContext } from '@/contexts/LocationContext';
+import type { Market } from '@/data/types';
 
 const IndiaFlag = () => (
   <svg width="20" height="15" viewBox="0 0 640 480" style={{ borderRadius: '2px', boxShadow: '0 0 1px rgba(0,0,0,0.3)', flexShrink: 0 }}>
@@ -33,9 +34,8 @@ const UaeFlag = () => (
 );
 
 const OPTIONS = [
-  { key: 'Dubai', label: 'Dubai', market: 'Dubai', Flag: UaeFlag, to: '/properties?market=Dubai' },
-  // 👇 Yahan 'India' ki jagah 'Pune' kar diya hai
-  { key: 'India', label: 'Pune', market: 'Pune', Flag: IndiaFlag, to: '/properties?market=Pune' },
+  { key: 'Dubai', label: 'Dubai', market: 'Dubai' as Market, Flag: UaeFlag },
+  { key: 'India', label: 'Pune', market: 'Pune' as Market, Flag: IndiaFlag },
 ] as const;
 
 interface CountrySelectorProps {
@@ -44,31 +44,9 @@ interface CountrySelectorProps {
 }
 
 export default function CountrySelector({ className = '', isMobile = false }: CountrySelectorProps) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const searchMarket = new URLSearchParams(location.search).get('market');
-
-  const getInitial = (): 'India' | 'Dubai' => {
-    if (searchMarket === 'Dubai') return 'Dubai';
-    if (searchMarket === 'Pune') return 'India';
-    const saved = localStorage.getItem('aurelia_country');
-    return saved === 'Dubai' ? 'Dubai' : 'India';
-  };
-
-  const [active, setActive] = useState<'India' | 'Dubai'>(getInitial);
+  const { market, setMarket } = useLocationContext();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
-
-  // Sync with URL market parameter
-  useEffect(() => {
-    if (searchMarket === 'Dubai') {
-      setActive('Dubai');
-      localStorage.setItem('aurelia_country', 'Dubai');
-    } else if (searchMarket === 'Pune') {
-      setActive('India');
-      localStorage.setItem('aurelia_country', 'India');
-    }
-  }, [searchMarket]);
 
   // Click outside listener
   useEffect(() => {
@@ -83,14 +61,11 @@ export default function CountrySelector({ className = '', isMobile = false }: Co
   }, [open]);
 
   const select = (opt: (typeof OPTIONS)[number]) => {
-    setActive(opt.key);
-    localStorage.setItem('aurelia_country', opt.key);
-    localStorage.setItem('aurelia_market', opt.market);
+    setMarket(opt.market);
     setOpen(false);
-    navigate(opt.to);
   };
 
-  const cur = OPTIONS.find(o => o.key === active) || OPTIONS[1];
+  const cur = OPTIONS.find(o => o.market === market) || OPTIONS[1];
 
   return (
     <div className={`country-sel-wrap ${className}`} ref={wrapRef} style={{ position: 'relative' }}>
@@ -100,7 +75,7 @@ export default function CountrySelector({ className = '', isMobile = false }: Co
         onClick={() => setOpen(!open)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label={`Select country, currently ${cur.label}`}
+        aria-label={`Select location, currently ${cur.label}`}
       >
         <cur.Flag />
         <span className="country-label">{cur.label}</span>
@@ -110,7 +85,7 @@ export default function CountrySelector({ className = '', isMobile = false }: Co
       {open && (
         <div className="country-dd" role="listbox" aria-label="Country options">
           {OPTIONS.map(opt => {
-            const isSel = active === opt.key;
+            const isSel = market === opt.market;
             return (
               <button
                 key={opt.key}

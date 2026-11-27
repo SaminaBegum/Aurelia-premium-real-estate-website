@@ -1,11 +1,12 @@
 import React from 'react';
 import { MessageCircle, ArrowUp } from 'lucide-react';
-import { SITE } from '@/data/site';
 import { useScrollProgress } from '@/hooks/useScrollProgress';
+import { useLocationContext } from '@/contexts/LocationContext';
 
 /** Scroll-progress line, WhatsApp button and back-to-top button. */
 export default function FloatingButtons() {
   const { y, pct } = useScrollProgress();
+  const { whatsapp } = useLocationContext();
 
   return (
     <>
@@ -22,7 +23,7 @@ export default function FloatingButtons() {
 
         <a
           className="wa"
-          href={SITE.whatsapp}
+          href={whatsapp}
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Chat on WhatsApp"

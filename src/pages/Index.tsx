@@ -6,6 +6,7 @@ import ParallaxBand from '@/components/home/ParallaxBand';
 import ProjectsRail from '@/components/home/ProjectsRail';
 import FeaturedListings from '@/components/home/FeaturedListings';
 import WhyChooseUs from '@/components/home/WhyChooseUs';
+import TestimonialsSection from '@/components/home/TestimonialsSection';
 import DevelopersMarquee from '@/components/home/DevelopersMarquee';
 import JourneySection from '@/components/home/JourneySection';
 import ContactCTA from '@/components/home/ContactCTA';
@@ -27,6 +28,7 @@ export default function Index() {
       <ProjectsRail />
       <FeaturedListings />
       <WhyChooseUs />
+      <TestimonialsSection />
       <div className="stats-gap">
         <StatsSection />
       </div>

@@ -1,41 +1,48 @@
-import React, { useState } from 'react';
+import React from 'react';
 import InnerPageBanner from '@/components/layout/InnerPageBanner';
 import { ProjectCard } from '@/components/ProjectCard';
 import { Reveal } from '@/components/ui/Reveal';
 import { Seg } from '@/components/ui/Seg';
 import { getProjects } from '@/api/api';
+import { useLocationContext } from '@/contexts/LocationContext';
 
 export default function Projects() {
-  const [m, setM] = useState('All');
-  const list = getProjects(m);
+  const { market, setMarket, isPune } = useLocationContext();
+  const list = getProjects(market);
 
   return (
     <>
       <InnerPageBanner
         eyebrow="Off-plan"
-        title="Exclusive off-plan projects"
-        sub="Hand-picked developments in Pune and Dubai, backed end-to-end by Aurelia."
-        img="hero.jpg"
+        title={isPune ? 'Exclusive Pune off-plan projects' : 'Exclusive Dubai off-plan projects'}
+        sub={
+          isPune
+            ? 'Hand-picked off-plan and new launch developments in Pune, backed end-to-end by Aurelia.'
+            : 'Hand-picked luxury off-plan developments in Dubai, backed end-to-end by Aurelia.'
+        }
+        img={isPune ? '24k-manor-1.jpg' : 'hero.jpg'}
         crumbs={[['Home', '/'], ['Off-Plan Projects']]}
       />
 
       <section className="w sec">
         <div className="tools">
           <Seg
-            v={m}
-            set={setM}
+            v={market}
+            set={(v) => {
+              const target = v === 'Dubai' ? 'Dubai' : 'Pune';
+              setMarket(target);
+            }}
             opts={[
-              ['All', 'All projects'],
-              ['Pune', 'Pune'],
-              ['Dubai', 'Dubai'],
+              ['Pune', 'Pune Projects'],
+              ['Dubai', 'Dubai Projects'],
             ]}
           />
-          <span>{list.length} projects</span>
+          <span>{list.length} {isPune ? 'Pune' : 'Dubai'} projects</span>
         </div>
 
         <div className="grid g3">
           {list.map((p, k) => (
-            <Reveal key={p.id} d={k * 60}>
+            <Reveal key={p.id} d={(k % 3) * 60}>
               <ProjectCard p={p} />
             </Reveal>
           ))}
